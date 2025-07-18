@@ -1,0 +1,38 @@
+name: Backend Health Check
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Check Backend Health
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check backend health endpoint
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.BACKEND_URL }}/health)
+        if [ "$response" != "200" ]; then
+          echo "Backend health check failed with status: $response"
+          exit 1
+        else
+          echo "Backend is healthy"
+        fi
+        
+    - name: Check API health endpoint
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.BACKEND_URL }}/api/health)
+        if [ "$response" != "200" ]; then
+          echo "API health check failed with status: $response"
+          exit 1
+        else
+          echo "API is healthy"
+        fi
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "Health check failed - consider setting up notifications to Slack/Discord/Email"
